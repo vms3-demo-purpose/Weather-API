@@ -433,4 +433,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Generated JSON files
+*.json
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,csharp,visualstudiocode
