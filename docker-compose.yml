@@ -1,0 +1,26 @@
+version: "3.8"  
+services:
+  api:
+    container_name: weather_api
+    environment:
+      - DATABASE_PUBLIC_URL=db
+    build: .
+    volumes:
+      - volume:/app
+    stdin_open: true
+    tty: true
+    depends_on:
+      - db
+  db:
+    container_name: weather_db
+    image: mcr.microsoft.com/mssql/server:2019-CU18-ubuntu-20.04
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Passw0rd#"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - volume:/data
+volumes:
+  volume:
