@@ -21,6 +21,6 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - volume:/data
+      - volume:/app
 volumes:
   volume:
