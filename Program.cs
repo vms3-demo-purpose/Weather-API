@@ -73,17 +73,81 @@ namespace WebApiClient
             bool succeeded = false;
             const int retryCount = 6;
             int retryIntervalSeconds = 10;
+            String connectionString = @"
+                Server=weather_db,1433;
+                Database=Master;
+                User Id=SA;
+                Password=Passw0rd#;
+                Encrypt=False;
+                TrustServerCertificate=True;
+                Trusted_Connection=True;
+                Integrated Security=False;
+            ";
+            SqlConnection connection = new SqlConnection(connectionString);
 
             for (int tries = 1; tries <= retryCount; tries++)
             {
                 try
                 {
+                    Console.WriteLine("Creating Table...");
+                    String createTableQuery = @"
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE Name = 'weather_records')
+                        CREATE TABLE weather_records (
+                            RecordID        INT             IDENTITY(1, 1)  PRIMARY KEY,
+                            Area            VARCHAR(255)    NOT NULL,
+                            Forecast        VARCHAR(255)    NOT NULL,
+                            SqlStartTime    DATETIME        NOT NULL,
+                            SqlEndTime      DATETIME        NOT NULL
+                        );
+                    ";
+                    ExecuteQuery(connection, createTableQuery);
+                    
+                    Console.WriteLine("Inserting into Table...");
+                    String insertIntoTableQuery = @"
+                        -- Constructing directory path of json
+                        DECLARE @FilePath NVARCHAR(128)
+                        SET @FilePath = '/data/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
+                        -- End of Constructing directory path of json
+
+                        -- Inserting JSON into DB
+                        DECLARE @SQL NVARCHAR(MAX)
+                        SET @SQL = N'
+                            DECLARE @JSON VARCHAR(MAX)
+                            SELECT @JSON = BULKCOLUMN
+                            FROM OPENROWSET (BULK ''' + @FilePath + ''', SINGLE_CLOB) import
+
+                            INSERT INTO weather_records (Area, Forecast, SqlStartTime, SqlEndTime)
+                            SELECT *
+                            FROM OPENJSON (@JSON)
+                            WITH (
+                                [Area] VARCHAR(255),
+                                [Forecast] VARCHAR(255),
+                                [SqlStartTime] DATETIME,
+                                [SqlEndTime] DATETIME                        
+                            );
+                        '
+                        EXEC(@SQL)
+                        -- End of Inserting JSON into DB
+                    ";
+                    ExecuteQuery(connection, insertIntoTableQuery);
+
+                    Console.WriteLine("Reading from Table...");
+                    String readFromQuery = @"
+                        SELECT 
+                            RecordID AS RID, 
+                            Area AS AREA, 
+                            Forecast AS FORECAST, 
+                            SqlStartTime AS STARTTIME,
+                            SqlEndTime AS ENDTIME
+                        FROM weather_records;
+                    ";
+                    ExecuteQuery(connection, readFromQuery);
+
                     if (tries > 1)
                     {
                         Console.WriteLine("Failed to connect to DB. Attempting retry {0}/{1}...", tries, retryCount);
                         Thread.Sleep(1000 * retryIntervalSeconds);
                     }
-                    AccessDB();
                     succeeded = true;
                     break;    
                 }
@@ -112,72 +176,7 @@ namespace WebApiClient
 
         static void AccessDB()
         {
-            String connectionString = @"
-            Server=weather_db,1433;
-            Database=Master;
-            User Id=SA;
-            Password=Passw0rd#;
-            Encrypt=False;
-            TrustServerCertificate=True;
-            Trusted_Connection=True;
-            Integrated Security=False;
-            ";
-            SqlConnection connection = new SqlConnection(connectionString);
-
-            Console.WriteLine("Pee Woop!");
-            Console.WriteLine("Creating Table...");
-            String createTableQuery = @"
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE Name = 'weather_records')
-                CREATE TABLE weather_records (
-                    RecordID        INT             IDENTITY(1, 1)  PRIMARY KEY,
-                    Area            VARCHAR(255)    NOT NULL,
-                    Forecast        VARCHAR(255)    NOT NULL,
-                    SqlStartTime    DATETIME        NOT NULL,
-                    SqlEndTime      DATETIME        NOT NULL
-                );
-            ";
-            ExecuteQuery(connection, createTableQuery);
             
-            Console.WriteLine("Inserting into Table...");
-            String insertIntoTableQuery = @"
-                -- Constructing directory path of json
-                DECLARE @FilePath NVARCHAR(128)
-                SET @FilePath = '/data/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
-                -- End of Constructing directory path of json
-
-                -- Inserting JSON into DB
-                DECLARE @SQL NVARCHAR(MAX)
-                SET @SQL = N'
-                    DECLARE @JSON VARCHAR(MAX)
-                    SELECT @JSON = BULKCOLUMN
-                    FROM OPENROWSET (BULK ''' + @FilePath + ''', SINGLE_CLOB) import
-
-                    INSERT INTO weather_records (Area, Forecast, SqlStartTime, SqlEndTime)
-                    SELECT *
-                    FROM OPENJSON (@JSON)
-                    WITH (
-                        [Area] VARCHAR(255),
-                        [Forecast] VARCHAR(255),
-                        [SqlStartTime] DATETIME,
-                        [SqlEndTime] DATETIME                        
-                    );
-                '
-                EXEC(@SQL)
-                -- End of Inserting JSON into DB
-            ";
-            ExecuteQuery(connection, insertIntoTableQuery);
-
-            Console.WriteLine("Reading from Table...");
-            String readFromQuery = @"
-                SELECT 
-                    RecordID AS RID, 
-                    Area AS AREA, 
-                    Forecast AS FORECAST, 
-                    SqlStartTime AS STARTTIME,
-                    SqlEndTime AS ENDTIME
-                FROM weather_records;
-            ";
-            ExecuteQuery(connection, readFromQuery);
         }
         
         static void ExecuteQuery(SqlConnection connection, String query)
