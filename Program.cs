@@ -90,15 +90,15 @@ namespace WebApiClient
                 try
                 {
                     Console.WriteLine("Creating Table...");
-                    String createTableQuery = File.ReadAllText("./Queries/CREATE_TABLE.sql");
+                    String createTableQuery = File.ReadAllText("./DB_Files/CREATE_TABLE.sql");
                     ExecuteQuery(connection, createTableQuery);
                     
                     Console.WriteLine("Inserting into Table...");
-                    String insertIntoTableQuery = File.ReadAllText("./Queries/INSERT_INTO.sql");
+                    String insertIntoTableQuery = File.ReadAllText("./DB_Files/INSERT_INTO.sql");
                     ExecuteQuery(connection, insertIntoTableQuery);
 
                     Console.WriteLine("Reading from Table...");
-                    String readFromQuery = File.ReadAllText("./Queries/SELECT_TABLE.sql");
+                    String readFromQuery = File.ReadAllText("./DB_Files/SELECT_TABLE.sql");
                     ExecuteQuery(connection, readFromQuery);
 
                     if (tries > 1)
