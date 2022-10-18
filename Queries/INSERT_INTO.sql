@@ -1,6 +1,6 @@
 -- Constructing directory path of json
 DECLARE @FilePath NVARCHAR(128)
-SET @FilePath = '/data/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
+SET @FilePath = '/app/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
 -- End of Constructing directory path of json
 
 -- Inserting JSON into DB

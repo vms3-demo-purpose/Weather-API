@@ -90,57 +90,15 @@ namespace WebApiClient
                 try
                 {
                     Console.WriteLine("Creating Table...");
-                    String createTableQuery = @"
-                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE Name = 'weather_records')
-                        CREATE TABLE weather_records (
-                            RecordID        INT             IDENTITY(1, 1)  PRIMARY KEY,
-                            Area            VARCHAR(255)    NOT NULL,
-                            Forecast        VARCHAR(255)    NOT NULL,
-                            SqlStartTime    DATETIME        NOT NULL,
-                            SqlEndTime      DATETIME        NOT NULL
-                        );
-                    ";
+                    String createTableQuery = File.ReadAllText("./Queries/CREATE_TABLE.sql");
                     ExecuteQuery(connection, createTableQuery);
                     
                     Console.WriteLine("Inserting into Table...");
-                    String insertIntoTableQuery = @"
-                        -- Constructing directory path of json
-                        DECLARE @FilePath NVARCHAR(128)
-                        SET @FilePath = '/data/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
-                        -- End of Constructing directory path of json
-
-                        -- Inserting JSON into DB
-                        DECLARE @SQL NVARCHAR(MAX)
-                        SET @SQL = N'
-                            DECLARE @JSON VARCHAR(MAX)
-                            SELECT @JSON = BULKCOLUMN
-                            FROM OPENROWSET (BULK ''' + @FilePath + ''', SINGLE_CLOB) import
-
-                            INSERT INTO weather_records (Area, Forecast, SqlStartTime, SqlEndTime)
-                            SELECT *
-                            FROM OPENJSON (@JSON)
-                            WITH (
-                                [Area] VARCHAR(255),
-                                [Forecast] VARCHAR(255),
-                                [SqlStartTime] DATETIME,
-                                [SqlEndTime] DATETIME                        
-                            );
-                        '
-                        EXEC(@SQL)
-                        -- End of Inserting JSON into DB
-                    ";
+                    String insertIntoTableQuery = File.ReadAllText("./Queries/INSERT_INTO.sql");
                     ExecuteQuery(connection, insertIntoTableQuery);
 
                     Console.WriteLine("Reading from Table...");
-                    String readFromQuery = @"
-                        SELECT 
-                            RecordID AS RID, 
-                            Area AS AREA, 
-                            Forecast AS FORECAST, 
-                            SqlStartTime AS STARTTIME,
-                            SqlEndTime AS ENDTIME
-                        FROM weather_records;
-                    ";
+                    String readFromQuery = File.ReadAllText("./Queries/SELECT_TABLE.sql");
                     ExecuteQuery(connection, readFromQuery);
 
                     if (tries > 1)
@@ -155,13 +113,7 @@ namespace WebApiClient
                 {
                     Console.WriteLine("{0}: Error occurred.", sqlException.Number);
                     succeeded = false;
-                    break;
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine(exception);
-                    succeeded = false;
-                }                
+                }               
             }
 
             if (!succeeded)
@@ -173,41 +125,27 @@ namespace WebApiClient
             // End Retry logic
             Console.Read();
         }
-
-        static void AccessDB()
-        {
-            
-        }
         
         static void ExecuteQuery(SqlConnection connection, String query)
         {
             SqlCommand sqlCommand = new SqlCommand(query, connection);
-            try
+            connection.Open();
+            SqlDataReader reader = sqlCommand.ExecuteReader();
+            while (reader.Read())
             {
-                connection.Open();
-                SqlDataReader reader = sqlCommand.ExecuteReader();
-                while (reader.Read())
-                {
-                    // Format output so that RID is left aligned with 5 width, Area is left aligned with 40 width, etc.
-                    Console.WriteLine("{0, -5}{1, -40}{2, -45}{3, -25}{4, -25}", 
-                        reader["RID"].ToString(),
-                        reader["AREA"].ToString(),
-                        reader["FORECAST"].ToString(),
-                        reader["STARTTIME"].ToString(),
-                        reader["ENDTIME"].ToString()
-                    );
-                }
+                // Format output so that RID is left aligned with 5 width, Area is left aligned with 40 width, etc.
+                Console.WriteLine("{0, -5}{1, -40}{2, -45}{3, -25}{4, -25}", 
+                    reader["RID"].ToString(),
+                    reader["AREA"].ToString(),
+                    reader["FORECAST"].ToString(),
+                    reader["STARTTIME"].ToString(),
+                    reader["ENDTIME"].ToString()
+                );
             }
-            catch (System.Exception ex)
+
+            if (connection.State == System.Data.ConnectionState.Open)
             {
-                Console.WriteLine(ex.ToString());
-            }
-            finally
-            {
-                if (connection.State == System.Data.ConnectionState.Open)
-                {
-                    connection.Close();
-                }
+                connection.Close();
             }
         }
     }
