@@ -1,16 +1,24 @@
--- Import Data from JSON file
-DECLARE @JSON varchar(max)
-SELECT @JSON=BulkColumn
-FROM OPENROWSET (BULK '/var/lib/mysql/2022-09-28.json', SINGLE_CLOB) AS import
+-- Constructing directory path of json
+DECLARE @FilePath NVARCHAR(128)
+SET @FilePath = '/data/out/' + CONVERT(VARCHAR, GetDate(), 105) + '.json'
+-- End of Constructing directory path of json
 
--- Insert into database
-INSERT INTO weather_records (Area, Forecast, SqlStartTime, SqlEndTime)
- SELECT Area, Forecast, CONVERT(DATETIME, SqlStartTime) AS SqlStartTime, CONVERT(DATETIME, SqlEndTime) AS SqlEndTime 
- FROM OPENJSON(@JSON)
- WITH 
-    (
-        Area VARCHAR(255),
-        Forecast VARCHAR(255), 
-        SqlStartTime DATETIME,
-        SqlEndTime DATETIME
+-- Inserting JSON into DB
+DECLARE @SQL NVARCHAR(MAX)
+SET @SQL = N'
+    DECLARE @JSON VARCHAR(MAX)
+    SELECT @JSON = BULKCOLUMN
+    FROM OPENROWSET (BULK ''' + @FilePath + ''', SINGLE_CLOB) import
+
+    INSERT INTO weather_records (Area, Forecast, SqlStartTime, SqlEndTime)
+    SELECT *
+    FROM OPENJSON (@JSON)
+    WITH (
+        [Area] VARCHAR(255),
+        [Forecast] VARCHAR(255),
+        [SqlStartTime] DATETIME,
+        [SqlEndTime] DATETIME                        
     );
+'
+EXEC(@SQL)
+-- End of Inserting JSON into DB

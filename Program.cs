@@ -46,16 +46,12 @@ namespace WebApiClient
                             DateTime end = i.valid_period.end;
                             foreach (Forecast f in i.forecasts!)
                             {
-                                string? area = f.area;
-                                string? forecast = f.forecast;
                                 data.Add(new Data()
                                 {
-                                    StartTime = start,
-                                    EndTime = end,
-                                    Area = area, 
-                                    Forecast = forecast,
-                                    SqlStartTime = start.ToString("yyyy-MM-dd HH:mm:ss.fff"),
-                                    SqlEndTime = end.ToString("yyyy-MM-dd HH:mm:ss.fff")
+                                    Area = f.area, 
+                                    Forecast = f.forecast,
+                                    SqlStartTime = start.ToString("yyyy-MM-dd HH:mm:ss"),
+                                    SqlEndTime = end.ToString("yyyy-MM-dd HH:mm:ss")
                                 });
 
                                 string json = JsonConvert.SerializeObject(data.ToArray(), Formatting.Indented);
@@ -73,8 +69,49 @@ namespace WebApiClient
                 }
             }
 
-            // TODO: Find ways to retry connection periodically instead of flat out waiting a full minute
-            Console.WriteLine("Waiting 60 secs for DB to finish initialising before connecting to DB...");
+            // Retry logic here
+            bool succeeded = false;
+            const int retryCount = 6;
+            int retryIntervalSeconds = 10;
+
+            for (int tries = 1; tries <= retryCount; tries++)
+            {
+                try
+                {
+                    if (tries > 1)
+                    {
+                        Console.WriteLine("Failed to connect to DB. Attempting retry {0}/{1}...", tries, retryCount);
+                        Thread.Sleep(1000 * retryIntervalSeconds);
+                    }
+                    AccessDB();
+                    succeeded = true;
+                    break;    
+                }
+                catch (SqlException sqlException)
+                {
+                    Console.WriteLine("{0}: Error occurred.", sqlException.Number);
+                    succeeded = false;
+                    break;
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception);
+                    succeeded = false;
+                }                
+            }
+
+            if (!succeeded)
+            {
+                Console.WriteLine("ERROR: Unable to access the database!");
+                return;
+            }
+            
+            // End Retry logic
+            Console.Read();
+        }
+
+        static void AccessDB()
+        {
             String connectionString = @"
             Server=weather_db,1433;
             Database=Master;
@@ -86,8 +123,8 @@ namespace WebApiClient
             Integrated Security=False;
             ";
             SqlConnection connection = new SqlConnection(connectionString);
-            System.Threading.Thread.Sleep(60000);
 
+            Console.WriteLine("Pee Woop!");
             Console.WriteLine("Creating Table...");
             String createTableQuery = @"
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE Name = 'weather_records')
@@ -141,8 +178,6 @@ namespace WebApiClient
                 FROM weather_records;
             ";
             ExecuteQuery(connection, readFromQuery);
-
-            Console.Read();
         }
         
         static void ExecuteQuery(SqlConnection connection, String query)
