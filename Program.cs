@@ -73,16 +73,7 @@ namespace WebApiClient
             bool succeeded = false;
             const int retryCount = 6;
             int retryIntervalSeconds = 10;
-            String connectionString = @"
-                Server=weather_db,1433;
-                Database=Master;
-                User Id=SA;
-                Password=Passw0rd#;
-                Encrypt=False;
-                TrustServerCertificate=True;
-                Trusted_Connection=True;
-                Integrated Security=False;
-            ";
+            String connectionString = File.ReadAllText("./DB_Files/connection_string.txt");
             SqlConnection connection = new SqlConnection(connectionString);
 
             for (int tries = 1; tries <= retryCount; tries++)

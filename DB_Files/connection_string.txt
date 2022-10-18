@@ -1,0 +1,8 @@
+Server=weather_db,1433;
+Database=Master;
+User Id=SA;
+Password=Passw0rd#;
+Encrypt=False;
+TrustServerCertificate=True;
+Trusted_Connection=True;
+Integrated Security=False;
