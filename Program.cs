@@ -71,6 +71,7 @@ namespace WebApiClient
 
             // Retry logic here
             bool succeeded = false;
+
             const int retryCount = 6;
             int retryIntervalSeconds = 10;
             String connectionString = File.ReadAllText("./DB_Files/connection_string.txt");
@@ -109,7 +110,7 @@ namespace WebApiClient
 
             if (!succeeded)
             {
-                Console.WriteLine("ERROR: Unable to access the database!");
+                Console.WriteLine("ERROR: Unable to access the database! No queries were executed.");
                 return;
             }
             
