@@ -10,6 +10,8 @@ namespace WebApiClient
         static async Task Main(string[] args)
         {
             await callWeatherAPI();
+            PushToDB();
+            Console.Read();
         }
 
         static async Task callWeatherAPI()
@@ -22,7 +24,7 @@ namespace WebApiClient
             // SQL's DATETIME uses a different format
             String sqlDate = singaporeTime.ToString("dd-MM-yyyy");
 
-            // Pull data from API, extract relevant bits and write to new json file to be pushed into Sql Server
+            // Pull data from API, extract relevant bits and write to new json file to be pushed into DB
             using (var client = new HttpClient())
             {
                 // Setup HttpClient
@@ -59,17 +61,21 @@ namespace WebApiClient
                                 System.IO.File.WriteAllText("./" + sqlDate + ".json", json);
                             }
                         }
-
                         Console.WriteLine("Pulled {0} weather records for date: {1}.", data.Count, sqlDate);
                     } 
-                } 
-                else
+                }
+                else 
                 {
                     Console.WriteLine("Failed Response Code: {0}", response.StatusCode);
                 }
             }
+        }
 
-            // Retry logic here
+        static void PushToDB()
+        {
+            bool tableCreated = false;
+            bool dataInserted = false;
+            bool tableReadFrom = false;
             bool succeeded = false;
 
             const int retryCount = 6;
@@ -81,25 +87,36 @@ namespace WebApiClient
             {
                 try
                 {
-                    Console.WriteLine("Creating Table...");
-                    String createTableQuery = File.ReadAllText("./DB_Files/CREATE_TABLE.sql");
-                    ExecuteQuery(connection, createTableQuery);
-                    
-                    Console.WriteLine("Inserting into Table...");
-                    String insertIntoTableQuery = File.ReadAllText("./DB_Files/INSERT_INTO.sql");
-                    ExecuteQuery(connection, insertIntoTableQuery);
-
-                    Console.WriteLine("Reading from Table...");
-                    String readFromQuery = File.ReadAllText("./DB_Files/SELECT_TABLE.sql");
-                    ExecuteQuery(connection, readFromQuery);
-
-                    if (tries > 1)
+                    if (!tableCreated)
                     {
-                        Console.WriteLine("Failed to connect to DB. Attempting retry {0}/{1}...", tries, retryCount);
+                        String createTableQuery = File.ReadAllText("./DB_Files/CREATE_TABLE.sql");
+                        ExecuteQuery(connection, createTableQuery);
+                        tableCreated = true;
+                    }
+                    
+                    if (!dataInserted)
+                    {
+                        String insertIntoTableQuery = File.ReadAllText("./DB_Files/INSERT_INTO.sql");
+                        ExecuteQuery(connection, insertIntoTableQuery);
+                        dataInserted = true;
+                    }
+                    
+                    if (!tableReadFrom)
+                    {
+                        String readFromQuery = File.ReadAllText("./DB_Files/SELECT_TABLE.sql");
+                        ExecuteQuery(connection, readFromQuery);
+                        tableReadFrom = true;
+                    }
+
+                    if (tries > 1 && !succeeded)
+                    {
+                        Console.WriteLine("Attempting retry {0}/{1}. Retrying in {2} seconds. Current progress:", tries, retryCount, retryIntervalSeconds);
+                        Console.WriteLine(tableCreated ? "Table Created: Yes" : "Table Created: No");
+                        Console.WriteLine(dataInserted ? "Data Inserted: Yes" : "Data Inserted: No");
+                        Console.WriteLine(tableReadFrom ? "Read from Table: Yes" : "Read from Table: No");
                         Thread.Sleep(1000 * retryIntervalSeconds);
                     }
-                    succeeded = true;
-                    break;    
+                    succeeded = tableCreated && dataInserted && tableReadFrom;
                 }
                 catch (SqlException sqlException)
                 {
@@ -110,14 +127,13 @@ namespace WebApiClient
 
             if (!succeeded)
             {
-                Console.WriteLine("ERROR: Unable to access the database! No queries were executed.");
-                return;
+                Console.WriteLine("Failed to establish connection to database to perform the following:");
+                Console.WriteLine(tableCreated ? "" : "Create Table");
+                Console.WriteLine(dataInserted ? "" : "Insert Data");
+                Console.WriteLine(tableReadFrom ? "" : "Read from Table");
             }
-            
-            // End Retry logic
-            Console.Read();
         }
-        
+
         static void ExecuteQuery(SqlConnection connection, String query)
         {
             SqlCommand sqlCommand = new SqlCommand(query, connection);
