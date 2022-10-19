@@ -13,26 +13,8 @@ The data is to be used to present weather data on a web application.
 3. .NET: 6.0.402
 
 # JSON Format
-[
-	{
-		"Area": "Ang Mo Kio",
-		"Forecast": "Partly Cloudy (Night)",
-		"SqlStartTime": "2022-10-18 00:30:00",
-		"SqlEndTime": "2022-10-18 02:30:00"
-	},
-	{
-		"Area": "Bedok",
-		"Forecast": "Partly Cloudy (Night)",
-		"SqlStartTime": "2022-10-18 00:30:00",
-		"SqlEndTime": "2022-10-18 02:30:00"
-	}
-]
+[18-10-2022.txt](https://github.com/vms3-demo-purpose/Weather-API/files/9816764/18-10-2022.txt)
 
 # DB Schema
-CREATE TABLE weather_records (
-	RecordID        INT				IDENTITY(1, 1)	PRIMARY KEY,
-	Area			VARCHAR(255)	NOT NULL,
- 	Forecast		VARCHAR(255)	NOT NULL,
-	SqlStartTime	DATETIME		NOT NULL,
-	SqlEndTime		DATETIME		NOT NULL
-);
+[CREATE_TABLE.txt](https://github.com/vms3-demo-purpose/Weather-API/files/9816766/CREATE_TABLE.txt)
+
