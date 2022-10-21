@@ -22,7 +22,7 @@ namespace WebApiClient
             String queryDate = singaporeTime.ToString("yyyy-MM-dd");
 
             // SQL's DATETIME uses a different format
-            String sqlDate = singaporeTime.ToString("dd-MM-yyyy");
+            String sqlDate = singaporeTime.ToString("dd-MM-yyyy HH:mm:ss");
 
             // Pull data from API, extract relevant bits and write to new json file to be pushed into DB
             using (var client = new HttpClient())
