@@ -11,7 +11,7 @@ Clone the repository. Open PowerShell (preferably with administrator rights), na
 
 `docker compose up --build --force-recreate --detach`
 
-Once the containers have are running, run the following command:
+Once the containers are running, run the following command:
 
 `docker logs --follow weather_api`
 
