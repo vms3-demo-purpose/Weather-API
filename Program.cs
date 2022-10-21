@@ -78,8 +78,8 @@ namespace WebApiClient
             bool tableReadFrom = false;
             bool succeeded = false;
 
-            const int retryCount = 6;
-            int retryIntervalSeconds = 10;
+            const int retryCount = 10;
+            int retryIntervalSeconds = 15;
             String connectionString = File.ReadAllText("./DB_Files/connection_string.txt");
             SqlConnection connection = new SqlConnection(connectionString);
 
