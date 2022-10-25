@@ -3,7 +3,8 @@ services:
   api:
     container_name: weather_api
     environment:
-      - DATABASE_PUBLIC_URL=db
+      DATABASE_PUBLIC_URL: "db"
+      TZ: "Asia/Singapore"
     build: .
     volumes:
       - volume:/app
@@ -18,6 +19,7 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "Passw0rd#"
       MSSQL_PID: "Developer"
+      TZ: "Asia/Singapore"
     ports:
       - "1433:1433"
     volumes:
