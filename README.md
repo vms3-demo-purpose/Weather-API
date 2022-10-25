@@ -6,6 +6,17 @@ A portion of the data gathered is extracted and transformed prior to insertion i
 
 The data is to be used to present weather data on a web application.
 
+# Running the container
+Clone the repository. Open PowerShell (preferably with administrator rights), navigate to the directory and run the following command:
+
+`docker compose up --build --force-recreate --detach`
+
+Once the containers are running, run the following command:
+
+`docker logs --follow weather_api`
+
+The records within the DB should be displayed.
+
 # Versions of Framework / Libraries used
 
 1. docker-compose: 3
