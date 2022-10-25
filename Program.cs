@@ -17,12 +17,12 @@ namespace WebApiClient
         static async Task callWeatherAPI()
         {
             // Get current date in yyyy-MM-dd to be passed in as query to the API
-            DateTime dateTime = DateTime.Today;
             var singaporeTime = TimeZoneInfo.ConvertTime(DateTime.Today, TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time"));
             String queryDate = singaporeTime.ToString("yyyy-MM-dd");
 
             // SQL's DATETIME uses a different format
-            String sqlDate = singaporeTime.ToString("dd-MM-yyyy HH:mm:ss");
+            String sqlDate =  singaporeTime.ToString("dd-MM-yyyy");
+            String sqlDateTime = singaporeTime.ToString("dd-MM-yyyy HH:mm:ss");
 
             // Pull data from API, extract relevant bits and write to new json file to be pushed into DB
             using (var client = new HttpClient())
@@ -108,6 +108,7 @@ namespace WebApiClient
                         tableReadFrom = true;
                     }
 
+                    succeeded = (tableCreated && dataInserted && tableReadFrom);
                     if (tries > 1 && !succeeded)
                     {
                         Console.WriteLine("Attempting retry {0}/{1}. Retrying in {2} seconds. Current progress:", tries, retryCount, retryIntervalSeconds);
@@ -116,7 +117,6 @@ namespace WebApiClient
                         Console.WriteLine(tableReadFrom ? "Read from Table: Yes" : "Read from Table: No");
                         Thread.Sleep(1000 * retryIntervalSeconds);
                     }
-                    succeeded = tableCreated && dataInserted && tableReadFrom;
                 }
                 catch (SqlException sqlException)
                 {
@@ -137,7 +137,12 @@ namespace WebApiClient
         static void ExecuteQuery(SqlConnection connection, String query)
         {
             SqlCommand sqlCommand = new SqlCommand(query, connection);
-            connection.Open();
+
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                connection.Open();
+            }
+            
             SqlDataReader reader = sqlCommand.ExecuteReader();
             while (reader.Read())
             {
