@@ -79,7 +79,7 @@ namespace WebApiClient
             bool succeeded = false;
 
             const int retryCount = 10;
-            int retryIntervalSeconds = 15;
+            int retryIntervalSeconds = 5;
             String connectionString = File.ReadAllText("./DB_Files/connection_string.txt");
             SqlConnection connection = new SqlConnection(connectionString);
 
@@ -87,6 +87,12 @@ namespace WebApiClient
             {
                 try
                 {
+                    Thread.Sleep(1000 * retryIntervalSeconds);
+                    Console.WriteLine("Attempting try {0}/{1} in {2} seconds. Current Progress: ", tries, retryCount, retryIntervalSeconds);
+                    Console.WriteLine(tableCreated ? "Table Created: Yes" : "Table Created: No");
+                    Console.WriteLine(dataInserted ? "Data Inserted: Yes" : "Data Inserted: No");
+                    Console.WriteLine(tableReadFrom ? "Read from Table: Yes" : "Read from Table: No");
+                    
                     if (!tableCreated)
                     {
                         String createTableQuery = File.ReadAllText("./DB_Files/CREATE_TABLE.sql");
@@ -109,13 +115,10 @@ namespace WebApiClient
                     }
 
                     succeeded = (tableCreated && dataInserted && tableReadFrom);
-                    if (tries > 1 && !succeeded)
+                    if (succeeded)
                     {
-                        Console.WriteLine("Attempting retry {0}/{1}. Retrying in {2} seconds. Current progress:", tries, retryCount, retryIntervalSeconds);
-                        Console.WriteLine(tableCreated ? "Table Created: Yes" : "Table Created: No");
-                        Console.WriteLine(dataInserted ? "Data Inserted: Yes" : "Data Inserted: No");
-                        Console.WriteLine(tableReadFrom ? "Read from Table: Yes" : "Read from Table: No");
-                        Thread.Sleep(1000 * retryIntervalSeconds);
+                        Console.WriteLine("All queries executed successfully.");
+                        break;
                     }
                 }
                 catch (SqlException sqlException)
