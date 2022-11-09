@@ -1,5 +1,6 @@
 # Weather-API vs weather-program:
 Weather-API passes JSON to DB, DB performs queries for data insertion
+
 weather-program deserialises JSON and uses EF Core to insert data into DB
 
 # Weather-API
